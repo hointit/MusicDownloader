@@ -19,7 +19,6 @@ namespace MusicDownloader.ViewModels
         public ICommand LoadPlayListCommand { get { return new RelayCommand<object>(LoadListAction); } }
         public ICommand DownLoadPlayListCommand { get { return new RelayCommand<object>(DownLoadListAction); } }
 
-
         private string _playlist;
         public string Playlist
         {
@@ -30,7 +29,6 @@ namespace MusicDownloader.ViewModels
                 OnPropertyChanged();
             }
         }
-
 
         public ObservableCollection<Song> ListSong { get; set; }
 
@@ -53,48 +51,31 @@ namespace MusicDownloader.ViewModels
 
             HtmlDocument document = htmlWeb.Load(_playlist);
 
+            var scriptJson = document.GetElementbyId("jwplayer-0").NextSibling;
 
-            var threadItems = document.DocumentNode.SelectNodes("//*[@id=\"box-recent-posts\"]/div[2]/div[3]").ToList();
+            var text = scriptJson.InnerText;
+            int a = text.Length - 3;
 
-            var items = new List<object>();
+            var subText = text.Substring(279 + 11, a - 279 - 12);
 
-            foreach (var item in threadItems)
+            var result = JsonConvert.DeserializeObject<List<TestList>>(subText);
+
+            foreach (var song in result)
             {
-                //Extract các giá trị từ các tag con của tag li
-                var linkNode = item.SelectSingleNode("//*[@id=\"box-recent-posts\"]/div[2]/div[3]/script");
-
-                var text = linkNode.InnerText;
-                int a = text.Length - 3;
-
-                var subText = text.Substring(279 + 11, a - 279 -12 );
-
-                var result = JsonConvert.DeserializeObject<List<TestList>>(subText);
-
-                foreach (var song in result)
+                ListSong.Add(new Song
                 {
-                    ListSong.Add(new Song
-                    {
-                        Name = song.title,
-                        Url = song.sources[0].file,
-                    }) ;
-                }
-
-                
+                    Name = song.title,
+                    Url = song.sources[0].file,
+                });
             }
-
-            //ListSong.Clear();
-            //ListSong.Add(new Song
-            //{
-            //    Name = "Ahihi",
-            //    Status = STATUS.PENDING
-            //});
         }
 
-        private void DownLoadListAction(object obj) 
+
+        private void DownLoadListAction(object obj)
         {
             Thread t = new Thread(Download);
             t.Start();
-            
+
         }
 
         private void Download()
@@ -105,7 +86,7 @@ namespace MusicDownloader.ViewModels
                 using (WebClient webClient = new WebClient())
                 {
                     webClient.DownloadFile(song.Url, @"D:\" + song.Name + ".mp3");
-                    
+
                 }
                 song.Status = STATUS.DOWNLOADED;
             }
