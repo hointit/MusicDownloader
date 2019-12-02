@@ -7,20 +7,65 @@
         xmlns:viewModel="clr-namespace:MusicDownloader.ViewModels"
         mc:Ignorable="d"
         Title="MainWindow" Height="800" Width="600">
-    
+
     <Window.DataContext>
         <viewModel:MainViewModel/>
     </Window.DataContext>
-    
-    <StackPanel Margin="20">
-        <TextBox Text="{Binding Playlist, Mode=TwoWay}"></TextBox>
-        <Button Command="{Binding LoadPlayListCommand}" Width="200" Margin="0 10 0 0">Load Play List</Button>
-        <DataGrid Margin="0 10 0 0" Name="dg" BorderThickness="1" Height="600" CanUserAddRows="False" AutoGenerateColumns="False" ItemsSource="{Binding ListSong}">
+    <Grid Margin="20 0 20 0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"></RowDefinition>
+            <RowDefinition Height="40"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="40"></RowDefinition>
+        </Grid.RowDefinitions>
+        
+        <TextBox Grid.Row="0" Text="{Binding Playlist, Mode=TwoWay}"></TextBox>
+        <Button Grid.Row="1" Command="{Binding LoadPlayListCommand}" Width="200">Load Play List</Button>
+        <DataGrid Grid.Row="2" 
+            IsReadOnly="True"
+            BorderThickness="1" 
+            CanUserAddRows="False"
+            AutoGenerateColumns="False"
+            ItemsSource="{Binding ListSong}">
+            
             <DataGrid.Columns>
-                <DataGridTextColumn Header="File" Width="*" Binding="{Binding Name}"></DataGridTextColumn>
-                <DataGridTextColumn Header="Status" Width="150" Binding="{Binding Status}"></DataGridTextColumn>
+                <DataGridTemplateColumn Width="50">
+                    <DataGridTemplateColumn.Header>
+                        <!--<CheckBox IsChecked="{Binding DownloadAll, Mode=TwoWay}"></CheckBox>-->
+                        <CheckBox IsChecked="{Binding Path=DataContext.DownloadAll, RelativeSource={RelativeSource AncestorType={x:Type Window}}, Mode=TwoWay}"></CheckBox>
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate >
+                        <DataTemplate>
+                            <!--<CheckBox Margin="3 0 0 0" IsChecked="{Binding Path=IsDownLoad, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}, Mode=TwoWay}"/>-->
+                            <CheckBox Margin="3 0 0 0" IsChecked="{Binding IsDownLoad, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Name" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel VerticalAlignment="Center">
+                                <Label Content="{Binding Name}"></Label>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Status" Width="200">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <ProgressBar Width="150" Value="{Binding Path=Process, Mode=OneWay}" Minimum="0" Maximum="100" />
+                                    <Label Content="{Binding Process}"></Label>
+                                </StackPanel>
+                                <TextBlock Text="{Binding Status}"></TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
-        <Button Command="{Binding DownLoadPlayListCommand}" Width="200" Margin="0 10 0 0">DownLoad List</Button>
-    </StackPanel>
+        <Button Grid.Row="3" Command="{Binding DownLoadPlayListCommand}" Width="200">DownLoad List</Button>
+    </Grid>
 </Window>

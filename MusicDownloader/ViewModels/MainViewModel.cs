@@ -11,6 +11,9 @@ using HtmlAgilityPack;
 using Newtonsoft.Json;
 using System.Net;
 using System.Threading;
+using System.Net.Http;
+using System.ComponentModel;
+using System.Windows;
 
 namespace MusicDownloader.ViewModels
 {
@@ -30,6 +33,27 @@ namespace MusicDownloader.ViewModels
             }
         }
 
+        private bool _downloadAll;
+        public bool DownloadAll {
+            get => _downloadAll;
+            set
+            {
+                _downloadAll = value;
+
+                SetCanDownloadAll(value);
+
+                OnPropertyChanged();
+            }
+        }
+
+        private void SetCanDownloadAll(bool b) {
+            foreach(var item in ListSong)
+            {
+                item.IsDownLoad = b;
+            }
+        }
+
+
         public ObservableCollection<Song> ListSong { get; set; }
 
         public MainViewModel()
@@ -40,33 +64,40 @@ namespace MusicDownloader.ViewModels
 
         private void LoadListAction(object obj)
         {
-
             ListSong.Clear();
-            HtmlWeb htmlWeb = new HtmlWeb()
+            try
             {
-                AutoDetectEncoding = false,
-                OverrideEncoding = Encoding.UTF8  //Set UTF8 để hiển thị tiếng Việt
-            };
 
-
-            HtmlDocument document = htmlWeb.Load(_playlist);
-
-            var scriptJson = document.GetElementbyId("jwplayer-0").NextSibling;
-
-            var text = scriptJson.InnerText;
-            int a = text.Length - 3;
-
-            var subText = text.Substring(279 + 11, a - 279 - 12);
-
-            var result = JsonConvert.DeserializeObject<List<TestList>>(subText);
-
-            foreach (var song in result)
-            {
-                ListSong.Add(new Song
+                HtmlWeb htmlWeb = new HtmlWeb()
                 {
-                    Name = song.title,
-                    Url = song.sources[0].file,
-                });
+                    AutoDetectEncoding = false,
+                    OverrideEncoding = Encoding.UTF8  //Set UTF8 để hiển thị tiếng Việt
+                };
+
+                HtmlDocument document = htmlWeb.Load(_playlist);
+
+                var scriptJson = document.GetElementbyId("jwplayer-0").NextSibling;
+
+                var text = scriptJson.InnerText;
+                int a = text.Length - 3;
+
+                var subText = text.Substring(279 + 11, a - 279 - 12);
+
+                var result = JsonConvert.DeserializeObject<List<TestList>>(subText);
+
+                foreach (var song in result)
+                {
+                    ListSong.Add(new Song
+                    {
+                        Name = song.title,
+                        Url = song.sources[0].file,
+                        IsDownLoad = true
+                    }); ;
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
             }
         }
 
@@ -75,23 +106,34 @@ namespace MusicDownloader.ViewModels
         {
             Thread t = new Thread(Download);
             t.Start();
-
         }
 
         private void Download()
         {
             foreach (var song in ListSong)
             {
+                if (!song.IsDownLoad) continue;
                 song.Status = STATUS.DOWNLOADING;
+
                 using (WebClient webClient = new WebClient())
                 {
-                    webClient.DownloadFile(song.Url, @"D:\" + song.Name + ".mp3");
+                    webClient.DownloadProgressChanged += new DownloadProgressChangedEventHandler((sender, e) =>
+                    {
+                        song.Status = string.Format("{0}/{1}Mb.",
+                                            String.Format("{0:0.00}",  e.BytesReceived / 1048576.0),
+                                            String.Format("{0:0.00}", e.TotalBytesToReceive / 1048576.0));
+                        song.Process = e.ProgressPercentage;
+                    });
 
+                    webClient.DownloadFileCompleted += new AsyncCompletedEventHandler((sender, e) =>
+                    {
+                        song.Status += " Complete";
+                    });
+
+                    webClient.DownloadFileAsync(new Uri(song.Url), @"D:\" + song.Name + ".mp3");
                 }
-                song.Status = STATUS.DOWNLOADED;
             }
         }
-
     }
 
     public class TestList

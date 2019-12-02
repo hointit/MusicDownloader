@@ -24,5 +24,29 @@ namespace MusicDownloader.Models
                 OnPropertyChanged();
             }
         }
+
+        private bool _isDownload;
+
+        public bool IsDownLoad
+        {
+            get => _isDownload;
+            set
+            {
+                _isDownload = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private double _process = 0.0;
+
+        public double Process {
+            get => _process;
+            set
+            {
+                _process = value;
+                OnPropertyChanged();
+            }
+        }
+
     }
 }
